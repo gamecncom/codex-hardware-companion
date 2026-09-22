@@ -101,7 +101,7 @@ export async function renderDeviceJpeg(descriptor: DeviceViewDescriptor): Promis
   if (descriptor.kind === 'detail' || descriptor.kind === 'transcript') {
     const title = Array.from(descriptor.title ?? '任务详情').slice(0, 20).join('');
     const lines = (descriptor.textLines ?? []).map((line, index) => `<text x="24" y="${98 + index * 25}" font-size="16" fill="#172033">${esc(line)}</text>`).join('');
-    const prompt = descriptor.kind === 'transcript' ? '<text x="24" y="286" font-size="13" fill="#0f766e">确认发送</text><text x="140" y="286" font-size="13" fill="#64748b">取消录音</text>' : '';
+    const prompt = descriptor.kind === 'transcript' ? '<text x="24" y="286" font-size="13" fill="#0f766e">识别后自动发送</text>' : '';
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="320"><style>${await fontCss()}text{font-family:HCFont,Arial,sans-serif}</style><rect width="480" height="320" fill="white"/><rect width="480" height="64" fill="#0f172a"/><text x="24" y="39" font-size="20" fill="white">${esc(title)}</text>${lines}${prompt}<text x="24" y="310" font-size="12" fill="#64748b">第 ${(descriptor.page ?? 0) + 1} / ${descriptor.pageCount ?? 1} 页</text></svg>`;
     return sharp(Buffer.from(svg)).jpeg({ quality: 82, progressive: false }).toBuffer();
   }

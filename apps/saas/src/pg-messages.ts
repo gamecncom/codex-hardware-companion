@@ -75,6 +75,7 @@ export class PgMessages {
       const recording = await c.query(`SELECT * FROM hc_recordings WHERE id=$1 FOR UPDATE`, [input.recordingId]);
       if (!recording.rowCount || recording.rows[0].binding_id !== b.id || recording.rows[0].status !== "ready") throw Error("ASR_FAILED");
       const r = recording.rows[0]; if (Number(r.binding_epoch) !== input.bindingEpoch || String(r.selection_revision) !== input.selectionRevision || !sameTarget(r.target, target)) throw Error("TARGET_MOVED");
+      if (typeof r.transcript !== "string" || !r.transcript.trim()) throw Error("ASR_FAILED");
       const existing = await c.query(`SELECT command_id FROM hc_messages WHERE recording_id=$1 LIMIT 1`, [input.recordingId]); if (existing.rowCount) throw Error("TARGET_MOVED");
       await expireBinding(c, b.id);
       await c.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`${target.connectorId}:${target.projectId}:${target.threadId}:message-capacity`]);

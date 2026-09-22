@@ -6,7 +6,7 @@
 
 在 Codex 新任务中粘贴：
 
-> 请从公开仓库 https://github.com/gamecncom/codex-hardware-companion 的 `skills/hardware-companion` 安装 Hardware Companion Skill；本机是 Apple Silicon Mac。安装后执行该 Skill 的固定 v0.3.3 bootstrap，使用 https://github.com/gamecncom/codex-hardware-companion/releases/download/v0.3.3/hardware-companion-macos-arm64-v0.3.3.tar.gz 及同地址追加 `.sha256` 的校验文件；不要使用其他平台包、另一台电脑的配置或设备凭据。安装完成后请检查 Skill 是否可用；如果当前任务没有发现它，请新开一个 Codex 任务再继续。
+> 请从公开仓库 https://github.com/gamecncom/codex-hardware-companion 的 `skills/hardware-companion` 安装 Hardware Companion Skill；本机是 Apple Silicon Mac。安装后执行该 Skill 的固定 v0.3.5 bootstrap，使用 https://github.com/gamecncom/codex-hardware-companion/releases/download/v0.3.5/hardware-companion-macos-arm64-v0.3.5.tar.gz 及同地址追加 `.sha256` 的校验文件；不要使用其他平台包、另一台电脑的配置或设备凭据。安装完成后请检查 Skill 是否可用；如果当前任务没有发现它，请新开一个 Codex 任务再继续。
 
 Skill 的公开目录：[skills/hardware-companion](https://github.com/gamecncom/codex-hardware-companion/tree/main/skills/hardware-companion)。bootstrap 已内置演示 SaaS 地址 `https://gamecncom.nat200.top`，新 Mac 不需要手填云端地址或组装 JSON。
 
@@ -42,7 +42,7 @@ Skill 的公开目录：[skills/hardware-companion](https://github.com/gamecncom
 6. 用户说“生成八位设备配对码”。电脑显示码；设备进入等待语音配对。
 7. 用户按住设备语音键，逐位说出 8 位码，松开；设备显示识别中/上传中/匹配中/绑定成功。设备绑定成功后，电脑执行 `device list`、`device use`。
 8. 用户选择任务 A。电脑输入一条演示消息；设备收到同一任务的新回复和提示音。
-9. 设备按住语音键说一句话，松开后等待 ASR；按当前设备确认提示确认发送。语音文字进入同一 `threadId`，电脑继续生成回复，设备收到回复。
+9. 设备按住语音键说一句话，松开后等待 ASR；识别到有效文本后自动发送到录音开始时冻结的同一 `threadId`。设备短暂显示识别文本和发送状态，不再等待第二次短按确认；电脑继续生成回复，设备收到回复。
 10. 在任务 A 忙或录音期间，不切换目标。让任务 B 产生新回复；设备空闲时显示任务 B 提醒，确认后再切回任务 A。
 11. 用户说“准备解绑当前设备”。Skill 展示精确设备、绑定和影响；用户取消时不执行 confirm。
 12. 用户明确确认后执行解绑。在线设备回到待绑定；再生成新码并重复步骤 6–7 完成重新绑定。

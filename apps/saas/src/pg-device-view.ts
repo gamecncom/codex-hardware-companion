@@ -75,10 +75,7 @@ async function createTranscriptView(db: PostgresStore, token: string, query: Dev
       page,
       pageCount: pages.length,
       textLines: pages[page],
-      items: [
-        { id: 'confirm', label: '确认发送', action: 'confirm' },
-        { id: 'cancel', label: '取消录音', action: 'cancel' },
-      ],
+      items: [],
       jpegPath: `/v1/device/views/${viewId}.jpg`,
     };
     const jpeg = await renderDeviceJpeg(descriptor);

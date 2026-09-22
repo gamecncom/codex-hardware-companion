@@ -7,6 +7,8 @@ description: "Manage the local Codex Hardware Companion through its JSON CLI: in
 
 Use the installed `companion` CLI as the only interface. On a new Apple-silicon Mac, install this Skill from the GitHub release bootstrap, then let it download and verify the matching arm64 Connector package. Every command must use its JSON output and report `ok`, `operation`, `data`, and `error`; never infer success from terminal prose.
 
+First-use flow: run the bootstrap, `service status`, `status`, and `doctor`; run `init` to associate the Mac with the demo SaaS account, then `project add` and `catalog sync` to discover the real local projects and tasks. After the user confirms exact TaskRefs, run `task authorize`; only then run `device pair`, guide the user through the device voice pairing, and run `device list`/`device use`. Daily device speech is automatic: hold the voice key, speak, release, wait for valid ASR text, and the device sends it once to the TaskRef frozen at recording start. Do not ask for or trigger a second short press to confirm sending. Pairing-code speech remains a separate pairing path and must never become a chat message.
+
 ## Safety and scope
 
 - Initialization, device pairing, project mapping, task discovery, grants, selection, and unbinding are separate operations. Explain which one succeeded and which remains pending.

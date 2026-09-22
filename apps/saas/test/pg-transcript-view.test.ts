@@ -38,7 +38,7 @@ test('PG transcript view paginates ready UTF-8 drafts, caps JPEGs, and isolates 
     assert.equal(descriptor.page, page);
     const pageCount = descriptor.pageCount!;
     assert.ok(pageCount > 1);
-    assert.deepEqual(descriptor.items.map((item: any) => item.action), ['confirm', 'cancel']);
+    assert.deepEqual(descriptor.items, []);
     const jpeg = await readDeviceJpeg(db, 'transcript-token-' + suffix, descriptor.viewId);
     assert.ok(jpeg.length <= 150 * 1024);
     const meta = await sharp(jpeg).metadata();
