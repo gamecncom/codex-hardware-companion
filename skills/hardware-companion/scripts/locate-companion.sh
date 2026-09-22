@@ -24,6 +24,7 @@ fi
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 for candidate in \
+  "$HOME/Library/Application Support/HardwareCompanion/connector/current/bin/companion" \
   "$script_dir/../../../bin/companion" \
   "$script_dir/../../../apps/connector/bin/companion"
 do

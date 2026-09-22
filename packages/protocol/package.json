@@ -1,8 +1,15 @@
 {
   "name": "@companion/protocol",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
-  "exports": { ".": "./dist/index.js", "./fixtures": "./dist/fixtures.js" },
-  "scripts": { "build": "tsc -p tsconfig.build.json", "typecheck": "tsc --noEmit -p tsconfig.json", "test": "node --import tsx --test test/*.test.ts" }
+  "exports": {
+    ".": "./dist/index.js",
+    "./fixtures": "./dist/fixtures.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --import tsx --test test/*.test.ts"
+  }
 }

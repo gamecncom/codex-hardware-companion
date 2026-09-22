@@ -1,10 +1,15 @@
 {
   "name": "@companion/connector",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
-  "dependencies": {"@companion/protocol":"0.3.0","ws":"^8.18.0"},
-  "bin": {"companion": "dist/cli.js"},
+  "dependencies": {
+    "@companion/protocol": "0.3.1",
+    "ws": "^8.18.0"
+  },
+  "bin": {
+    "companion": "dist/cli.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "package:macos": "node scripts/package-macos.mjs",

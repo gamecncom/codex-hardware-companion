@@ -14,13 +14,13 @@ import { ServiceManager } from './serviceManager.js';
 import { UpdateManager } from './updateManager.js';
 import { CloudGrants } from './cloudGrants.js';
 const args=process.argv.slice(2), op=args.join(' ');
+const DEFAULT_BASE_URL='https://gamecncom.nat200.top';
 const flag=(name:string)=>{const i=args.indexOf(name);return i>=0?args[i+1]:undefined};
 const configPath=()=>flag('--config')??`${process.env.HOME}/Library/Application Support/HardwareCompanion/config.json`;
 async function readConfig(){try{return JSON.parse(await fs.readFile(configPath(),'utf8'))}catch{return {}}}
 async function writeConfig(x:unknown){await fs.mkdir((configPath().split('/').slice(0,-1).join('/')||'.'),{recursive:true});await fs.writeFile(configPath(),JSON.stringify(x,null,2));}
 function baseUrl(c:any): string {
- const value=flag('--base-url')??c.baseUrl??process.env.HC_COMPANION_BASE_URL;
- if(!value)throw new Error('BASE_URL_REQUIRED');
+ const value=flag('--base-url')??c.baseUrl??process.env.HC_COMPANION_BASE_URL??DEFAULT_BASE_URL;
  let parsed: URL;
  try { parsed=new URL(value); } catch { throw new Error('INVALID_BASE_URL'); }
  if(parsed.protocol!=='http:'&&parsed.protocol!=='https:')throw new Error('INVALID_BASE_URL');

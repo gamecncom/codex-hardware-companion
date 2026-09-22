@@ -22,7 +22,7 @@ test('macOS package wrapper runs from a spaced staging path and embeds skill/che
   assert.equal(summary.ok, true);
   assert.equal(summary.arch, process.arch);
   assert.equal(summary.x64Built, false);
-  const packageRoot = join(output, `hardware-companion-macos-${process.arch}-v0.3.0`);
+  const packageRoot = join(output, `hardware-companion-macos-${process.arch}-v0.3.1`);
   const wrapper = join(packageRoot, 'bin', 'companion');
   const config = join(root, 'config path with spaces.json');
   const wrapperResult = await run(wrapper, ['unknown-operation', '--config', config], { env: { PATH: '/usr/bin:/bin' } }).catch(error => error);
@@ -31,7 +31,7 @@ test('macOS package wrapper runs from a spaced staging path and embeds skill/che
   assert.equal(outputJson.ok, false);
   assert.equal(outputJson.operation, 'unknown-operation --config ' + config);
   assert.match(await readFile(join(packageRoot, 'skills', 'hardware-companion', 'SKILL.md'), 'utf8'), /hardware-companion/);
-  assert.equal((await readFile(join(packageRoot, 'VERSION'), 'utf8')).trim(), '0.3.0');
+  assert.equal((await readFile(join(packageRoot, 'VERSION'), 'utf8')).trim(), '0.3.1');
   const compatibility = JSON.parse(await readFile(join(packageRoot, 'compatibility.json'), 'utf8'));
   assert.equal(compatibility.architecture, process.arch);
   assert.equal(compatibility.protocol, 'hc/1');
