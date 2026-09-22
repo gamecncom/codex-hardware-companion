@@ -105,7 +105,11 @@ export class CompanionDaemon {
 
   private async publishMonitor() {
     for (const [threadId, entries] of this.monitor) {
-      const result = normalizeThread(await this.options.adapter.readThread(threadId));
+      let result = normalizeThread(await this.options.adapter.readThread(threadId));
+      if (result.status === 'failed') {
+        await new Promise(resolve => setTimeout(resolve, 750));
+        result = normalizeThread(await this.options.adapter.readThread(threadId));
+      }
       const changed = entries.filter(entry => result.resultRevision !== entry.lastRevision);
       if (!changed.length) continue;
       for (const entry of entries) entry.lastRevision = result.resultRevision;
