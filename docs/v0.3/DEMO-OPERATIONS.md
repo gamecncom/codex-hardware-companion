@@ -6,7 +6,7 @@
 
 在 Codex 新任务中粘贴：
 
-> 请从公开仓库 https://github.com/gamecncom/codex-hardware-companion 的 `skills/hardware-companion` 安装 Hardware Companion Skill；本机是 Apple Silicon Mac。安装后执行该 Skill 的固定 v0.3.2 bootstrap，使用 https://github.com/gamecncom/codex-hardware-companion/releases/download/v0.3.2/hardware-companion-macos-arm64-v0.3.2.tar.gz 及同地址追加 `.sha256` 的校验文件；不要使用其他平台包、另一台电脑的配置或设备凭据。安装完成后请检查 Skill 是否可用；如果当前任务没有发现它，请新开一个 Codex 任务再继续。
+> 请从公开仓库 https://github.com/gamecncom/codex-hardware-companion 的 `skills/hardware-companion` 安装 Hardware Companion Skill；本机是 Apple Silicon Mac。安装后执行该 Skill 的固定 v0.3.3 bootstrap，使用 https://github.com/gamecncom/codex-hardware-companion/releases/download/v0.3.3/hardware-companion-macos-arm64-v0.3.3.tar.gz 及同地址追加 `.sha256` 的校验文件；不要使用其他平台包、另一台电脑的配置或设备凭据。安装完成后请检查 Skill 是否可用；如果当前任务没有发现它，请新开一个 Codex 任务再继续。
 
 Skill 的公开目录：[skills/hardware-companion](https://github.com/gamecncom/codex-hardware-companion/tree/main/skills/hardware-companion)。bootstrap 已内置演示 SaaS 地址 `https://gamecncom.nat200.top`，新 Mac 不需要手填云端地址或组装 JSON。
 

@@ -12,6 +12,10 @@ test('uses the latest Codex turn when thread status is notLoaded', () => {
   assert.equal(normalizeThread(snapshot('unknown', [turn('latest', 'interrupted')])).status, 'failed');
 });
 
+test('uses a completed latest turn when the thread status is stale failed', () => {
+  assert.equal(normalizeThread(snapshot('failed', [turn('latest', 'completed')])).status, 'completed');
+});
+
 test('keeps a live thread status ahead of a stale turn status', () => {
   assert.equal(normalizeThread(snapshot('running', [turn('latest', 'completed')])).status, 'running');
   assert.equal(normalizeThread(snapshot('waiting_user', [turn('latest', 'completed')])).status, 'waiting_user');
