@@ -23,6 +23,20 @@ export class AppServerAdapter implements CodexAdapter {
   async listThreads(cursor?:string):Promise<ThreadPage>{ await this.ensureInit(); const r=await this.request('thread/list',{limit:100,...(cursor?{cursor}:{})}); const data=(r.data??[]).map((x:any):ThreadSummary=>{const id=String(x.id??x.sessionId);return {threadId:id,title:x.name?String(x.name):`未命名任务 · ${id.slice(-8)}`,titleSource:x.name?'codex':'fallback',cwd:x.cwd,status:status(x.status?.type),updatedAt:x.updatedAt?new Date(Number(x.updatedAt)*1000).toISOString():undefined,source:x.source};}); return {data,nextCursor:r.nextCursor}; }
   async readThread(threadId:string):Promise<ThreadSnapshot>{ await this.ensureInit(); const r=await this.request('thread/read',{threadId,includeTurns:true}); const x=r.thread??r; const actual=String(x.id??x.threadId??threadId); if(actual!==threadId)throw new Error('THREAD_ID_MISMATCH'); if(!x.cwd)throw new Error('THREAD_CWD_UNAVAILABLE'); return {threadId,cwd:x.cwd,title:x.name??undefined,turns:x.turns??[],status:status(x.status?.type),raw:r}; }
   async enqueue(threadId:string,text:string,originalCwd:string):Promise<QueueReceipt>{ return new Promise((resolve)=>{ execFile(this.binary,['queue','--thread',threadId,'--message',text],{cwd:originalCwd,windowsHide:true},(error,stdout,stderr)=>{ const raw=(stdout||stderr||'').trim(); if(error||!raw){resolve({accepted:false,raw:raw||error?.message||'empty queue output',status:'uncertain'});return;} const m=raw.match(/Queued message\s+([0-9a-f-]+)\s+for thread\s+([0-9a-f-]+)/i); if(!m||m[2]!==threadId){resolve({accepted:false,raw,status:'uncertain'});return;} resolve({accepted:true,queueId:m[1],raw,status:'queued'}); }); }); }
-  async readIdentity():Promise<IdentityContext>{ try { await this.ensureInit(); const a=await this.request('account/read');if(!a?.account?.type)return {available:false,source:'app-server'};const s=JSON.stringify({type:a.account.type,planType:a.account.planType,email:a.account.email});return {available:true,source:'app-server',fingerprint:createHash('sha256').update(s).digest('hex').slice(0,16)}; } catch { return {available:false,source:'unavailable'}; } }
+  async readIdentity():Promise<IdentityContext>{
+    for(let attempt=0;attempt<2;attempt++){
+      try {
+        await this.ensureInit();
+        const a=await this.request('account/read');
+        if(!a?.account?.type){ if(attempt===0){await new Promise(r=>setTimeout(r,250));continue;} return {available:false,source:'app-server'}; }
+        const s=JSON.stringify({type:a.account.type,planType:a.account.planType,email:a.account.email});
+        return {available:true,source:'app-server',fingerprint:createHash('sha256').update(s).digest('hex').slice(0,16)};
+      } catch {
+        if(attempt===0){await this.close();await new Promise(r=>setTimeout(r,250));continue;}
+        return {available:false,source:'unavailable'};
+      }
+    }
+    return {available:false,source:'unavailable'};
+  }
   async close(){ if(this.child){this.child.kill('SIGTERM'); await once(this.child,'exit').catch(()=>{});this.child=undefined;} }
 }

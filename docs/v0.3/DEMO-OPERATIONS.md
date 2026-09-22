@@ -6,7 +6,7 @@
 
 在 Codex 新任务中粘贴：
 
-> 请从公开仓库 https://github.com/gamecncom/codex-hardware-companion 的 `skills/hardware-companion` 安装 Hardware Companion Skill；本机是 Apple Silicon Mac。安装后执行该 Skill 的固定 v0.3.1 bootstrap，使用 https://github.com/gamecncom/codex-hardware-companion/releases/download/v0.3.1/hardware-companion-macos-arm64-v0.3.1.tar.gz 及同地址追加 `.sha256` 的校验文件；不要使用其他平台包、另一台电脑的配置或设备凭据。安装完成后请检查 Skill 是否可用；如果当前任务没有发现它，请新开一个 Codex 任务再继续。
+> 请从公开仓库 https://github.com/gamecncom/codex-hardware-companion 的 `skills/hardware-companion` 安装 Hardware Companion Skill；本机是 Apple Silicon Mac。安装后执行该 Skill 的固定 v0.3.2 bootstrap，使用 https://github.com/gamecncom/codex-hardware-companion/releases/download/v0.3.2/hardware-companion-macos-arm64-v0.3.2.tar.gz 及同地址追加 `.sha256` 的校验文件；不要使用其他平台包、另一台电脑的配置或设备凭据。安装完成后请检查 Skill 是否可用；如果当前任务没有发现它，请新开一个 Codex 任务再继续。
 
 Skill 的公开目录：[skills/hardware-companion](https://github.com/gamecncom/codex-hardware-companion/tree/main/skills/hardware-companion)。bootstrap 已内置演示 SaaS 地址 `https://gamecncom.nat200.top`，新 Mac 不需要手填云端地址或组装 JSON。
 
@@ -68,4 +68,3 @@ Skill 的公开目录：[skills/hardware-companion](https://github.com/gamecncom
 | 双向消息 | 电脑输入和设备语音进入同一 threadId | 软件契约通过，待真机 |
 | 提醒/切换 | 跨任务提醒、目标冻结、切换后仍隔离 | 软件契约通过，待真机 |
 | 解绑/重绑 | prepare/confirm、旧绑定失效、新码重新绑定 | 软件契约通过，待真机 |
-

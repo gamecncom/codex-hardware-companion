@@ -1,10 +1,10 @@
 {
   "name": "@companion/connector",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@companion/protocol": "0.3.1",
+    "@companion/protocol": "0.3.2",
     "ws": "^8.18.0"
   },
   "bin": {
