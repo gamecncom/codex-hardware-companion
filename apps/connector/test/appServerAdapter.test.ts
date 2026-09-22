@@ -1,0 +1,2 @@
+import test from 'node:test'; import assert from 'node:assert/strict'; import {AppServerAdapter} from '../src/appServerAdapter.js';
+test('real binary read-only probe detects queue capability and lists threads',async()=>{const a=new AppServerAdapter('/Applications/ChatGPT.app/Contents/Resources/codex');const c=await a.detect();assert.match(c.version,/^\d+\.\d+/);assert.equal(c.enqueue,true);const p=await a.listThreads();assert.ok(Array.isArray(p.data));assert.ok(p.data.every(x=>x.threadId&&x.cwd));await a.close();});

@@ -1,0 +1,2 @@
+import test from 'node:test'; import assert from 'node:assert/strict'; import {mkdtemp,readFile} from 'node:fs/promises'; import {tmpdir} from 'node:os'; import {join} from 'node:path'; import {ExecutionLedger} from '../src/ledger.js';
+test('ledger persists and de-duplicates by message id',async()=>{const d=await mkdtemp(join(tmpdir(),'hc-'));const l=new ExecutionLedger(join(d,'e.json'));const e=await l.begin('m1','t1','hello','/tmp');await l.update(e.executionId,{state:'queued',queueId:'q1'});assert.equal((await l.find('m1'))?.queueId,'q1');});

@@ -1,0 +1,26 @@
+{
+  "name": "@companion/saas",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@companion/protocol": "0.3.0",
+    "nodemailer": "^10.0.10",
+    "pg": "^8.13.1",
+    "sharp": "^0.35.4",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^8.0.2",
+    "@types/pg": "^8.11.10",
+    "@types/smtp-server": "^3.5.13",
+    "@types/ws": "^8.5.13",
+    "smtp-server": "^3.19.13"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --import tsx --test test/*.test.ts",
+    "start": "node --import tsx src/main.ts"
+  }
+}

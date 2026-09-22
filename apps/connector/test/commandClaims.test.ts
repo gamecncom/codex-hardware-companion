@@ -1,0 +1,2 @@
+import test from 'node:test'; import assert from 'node:assert/strict'; import {mkdtemp} from 'node:fs/promises'; import {tmpdir} from 'node:os'; import {join} from 'node:path'; import {CommandClaimStore} from '../src/commandClaims.js';
+test('command claim is durable and idempotent',async()=>{const d=await mkdtemp(join(tmpdir(),'hc-'));const s=new CommandClaimStore(join(d,'claims.json'));assert.equal((await s.claim('c1','connector')).claimed,true);assert.equal((await s.claim('c1','connector')).claimed,false);});

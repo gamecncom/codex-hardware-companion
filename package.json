@@ -1,0 +1,21 @@
+{
+  "name": "codex-hardware-companion",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "engines": {"node": ">=22"},
+  "scripts": {
+    "build": "npm run build --workspace=@companion/protocol && npm run build --workspace=@companion/connector && npm run build --workspace=@companion/saas",
+    "pretest": "npm run build --workspace=@companion/protocol",
+    "test": "npm run test --workspaces --if-present && npm run test:integration",
+    "test:integration": "node --import tsx --test tests/integration/*.test.ts",
+    "test:pg": "node --import tsx --test tests/pg*.test.ts",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "tsx": "^4.19.0"
+  }
+}

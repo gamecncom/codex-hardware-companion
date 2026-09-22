@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"hc/1/task-ref","type":"object","additionalProperties":false,"required":["connectorId","projectId","threadId"],"properties":{"connectorId":{"type":"string","maxLength":128},"projectId":{"type":"string","maxLength":128},"threadId":{"type":"string","maxLength":128}}}

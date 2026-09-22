@@ -1,0 +1,1 @@
+{"extends":"../../tsconfig.base.json","compilerOptions":{"baseUrl":".","paths":{"@companion/protocol":["../../packages/protocol/src/index.ts"],"@companion/protocol/fixtures":["../../packages/protocol/src/fixtures.ts"]}},"include":["src/**/*.ts","test/**/*.ts"]}

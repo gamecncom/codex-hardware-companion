@@ -1,0 +1,15 @@
+[Unit]
+Description=Codex Hardware Companion SaaS (hc/1)
+After=network.target postgresql.service
+
+[Service]
+User=companion
+WorkingDirectory=/opt/codex-hardware-companion/current
+EnvironmentFile=/etc/codex-hardware-companion/companion.env
+ExecStart=/opt/codex-hardware-companion/runtime/bin/node apps/saas/dist/apps/saas/src/main.js
+Restart=always
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

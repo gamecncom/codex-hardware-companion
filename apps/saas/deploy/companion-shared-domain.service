@@ -1,0 +1,15 @@
+[Unit]
+Description=Shared-domain HTTP and WebSocket gateway
+After=network.target
+
+[Service]
+User=companion
+WorkingDirectory=/opt/codex-hardware-companion
+Environment=PORT=3002
+ExecStart=/opt/codex-hardware-companion/runtime/bin/node /opt/codex-hardware-companion/shared-domain-gateway.mjs
+Restart=always
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

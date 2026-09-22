@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hardware Companion"
+  short_description: "Manage paired hardware access to confirmed local Codex tasks"
+  default_prompt: "Use $hardware-companion to diagnose or manage the local hardware companion with JSON CLI results."

@@ -1,0 +1,2 @@
+import test from 'node:test'; import assert from 'node:assert/strict'; import {addMapping,mapThreadToProject} from '../src/projectMapping.js';
+test('maps exact and nested paths by longest boundary',()=>{const a=addMapping('a','/tmp/foo'),b=addMapping('b','/tmp/foo/nested');assert.equal(mapThreadToProject('/tmp/foo/nested/x',[a,b])?.projectId,b.projectId);assert.equal(mapThreadToProject('/tmp/foo2/x',[a]),undefined);});
