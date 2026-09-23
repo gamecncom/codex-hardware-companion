@@ -91,8 +91,8 @@ export async function copyPreset(c: pg.PoolClient, connectorId: string, bindingI
 }
 
 export function normalizePairingDigits(value: string) {
-  const map: Record<string, string> = { 零:'0',〇:'0',一:'1',二:'2',两:'2',三:'3',四:'4',五:'5',六:'6',七:'7',八:'8',九:'9' };
-  const normalized = value.replace(/[零〇一二两三四五六七八九]/g, x => map[x]).replace(/[\s-]/g, '');
+  const map: Record<string, string> = { 零:'0',〇:'0',一:'1',二:'2',两:'2',三:'3',四:'4',五:'5',六:'6',七:'7',八:'8',九:'9',幺:'1' };
+  const normalized = value.normalize('NFKC').replace(/[零〇一二两三四五六七八九幺]/g, x => map[x]).replace(/[\s\p{P}\p{S}]/gu, '');
   return /^\d{8}$/.test(normalized) ? normalized : undefined;
 }
 
@@ -145,17 +145,22 @@ export async function voicePair(db: PostgresStore, asr: AsrAdapter | undefined, 
   const attempt = await db.transaction(async c => {
     const old = await c.query('SELECT * FROM hc_voice_pairing_attempts WHERE device_id=$1 AND client_request_id=$2', [deviceId, clientRequestId]);
     if (old.rowCount) return old.rows[0];
-    const id = `vpa-${randomUUID()}`; await c.query('INSERT INTO hc_voice_pairing_attempts(id,device_id,client_request_id,status) VALUES($1,$2,$3,$4)', [id, deviceId, clientRequestId, 'processing']); return { id, device_id: deviceId };
+    const id = `vpa-${randomUUID()}`; await c.query('INSERT INTO hc_voice_pairing_attempts(id,device_id,client_request_id,status) VALUES($1,$2,$3,$4)', [id, deviceId, clientRequestId, 'processing']); return { id, device_id: deviceId, status: 'processing' };
   });
   if (attempt.status !== 'processing') return { pairingAttemptId: attempt.id, status: attempt.status, bindingId: attempt.binding_id, epoch: attempt.binding_epoch, target: attempt.target };
-  const tmp = `/tmp/${attempt.id}.m4a`; const { promises: fs } = await import('node:fs'); await fs.writeFile(tmp, audio);
+  void processVoicePairing(db, asr, deviceId, attempt.id, audio);
+  return { pairingAttemptId: attempt.id, status: 'processing' };
+}
+
+async function processVoicePairing(db: PostgresStore, asr: AsrAdapter, deviceId: string, attemptId: string, audio: Buffer) {
+  const tmp = `/tmp/${attemptId}.m4a`; const { promises: fs } = await import('node:fs'); await fs.writeFile(tmp, audio);
   try {
     const transcript = await asr.transcribe(tmp); const code = normalizePairingDigits(transcript.transcript);
-    if (!code) { await db.pool.query('UPDATE hc_voice_pairing_attempts SET status=$2,transcript=$3,updated_at=now() WHERE id=$1', [attempt.id, 'no_match', transcript.transcript]); return { pairingAttemptId: attempt.id, status: 'no_match' }; }
+    if (!code) { await db.pool.query('UPDATE hc_voice_pairing_attempts SET status=$2,transcript=$3,updated_at=now() WHERE id=$1 AND status=$4', [attemptId, 'no_match', transcript.transcript, 'processing']); return; }
     const result = await db.transaction(async c => {
       await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`device-pair:${deviceId}`]);
       const pair = await c.query("SELECT * FROM hc_pairings WHERE code_hash=$1 AND expires_at>now() AND consumed_at IS NULL FOR UPDATE", [hash(code)]);
-      if (!pair.rowCount) { await c.query('UPDATE hc_voice_pairing_attempts SET status=$2,transcript=$3,updated_at=now() WHERE id=$1', [attempt.id, 'no_match', transcript.transcript]); return { pairingAttemptId: attempt.id, status: 'no_match' }; }
+      if (!pair.rowCount) { await c.query('UPDATE hc_voice_pairing_attempts SET status=$2,transcript=$3,updated_at=now() WHERE id=$1 AND status=$4', [attemptId, 'no_match', transcript.transcript, 'processing']); return; }
       const active = await c.query("SELECT id FROM hc_bindings WHERE device_id=$1 AND state='active'", [deviceId]); if (active.rowCount) throw Error('PAIRING_CONFLICT');
       const owner = await c.query(`SELECT email FROM hc_connectors WHERE id=$1`, [pair.rows[0].connector_id]);
       if (!owner.rowCount) throw Error('UNAUTHORIZED');
@@ -163,16 +168,25 @@ export async function voicePair(db: PostgresStore, asr: AsrAdapter | undefined, 
       const bindingId = `bind-${randomUUID()}`, deviceToken = randomUUID() + randomUUID();
       await c.query(`INSERT INTO hc_bindings(id,user_id,device_id,connector_id,epoch,state,device_token) VALUES($1,$2,$3,$4,1,'active',$5)`, [bindingId, user.rows[0].id, deviceId, pair.rows[0].connector_id, deviceToken]);
       await copyPreset(c, pair.rows[0].connector_id, bindingId); await c.query('UPDATE hc_pairings SET consumed_at=now() WHERE id=$1', [pair.rows[0].id]);
-      const out = { pairingAttemptId: attempt.id, status: 'bound', bindingId, epoch: 1, bindingToken: deviceToken };
-      await c.query('UPDATE hc_voice_pairing_attempts SET status=$2,transcript=$3,binding_id=$4,binding_epoch=1,binding_token=$5,updated_at=now() WHERE id=$1', [attempt.id, 'bound', transcript.transcript, bindingId, deviceToken]);
+      const out = { pairingAttemptId: attemptId, status: 'bound', bindingId, epoch: 1, bindingToken: deviceToken };
+      await c.query('UPDATE hc_voice_pairing_attempts SET status=$2,transcript=$3,binding_id=$4,binding_epoch=1,binding_token=$5,updated_at=now() WHERE id=$1 AND status=$6', [attemptId, 'bound', transcript.transcript, bindingId, deviceToken, 'processing']);
       return out;
-    }); return result;
+    });
+    return result;
+  } catch (error) {
+    console.warn(`[voice-pairing] attempt ${attemptId} failed: ${error instanceof Error ? error.message : String(error)}`);
+    await db.pool.query("UPDATE hc_voice_pairing_attempts SET status='no_match',updated_at=now() WHERE id=$1 AND status='processing'", [attemptId]).catch(() => undefined);
   } finally { await fs.rm(tmp, { force: true }).catch(() => undefined); }
 }
 
 export async function voicePairStatus(db: PostgresStore, bootstrap: string, deviceId: string, attemptId: string) {
-  const r = await db.pool.query('SELECT status,binding_id,binding_epoch,binding_token,target FROM hc_voice_pairing_attempts WHERE id=$1 AND device_id=$2', [attemptId, deviceId]);
-  if (!r.rowCount) throw Error('NOT_FOUND'); const x = r.rows[0]; return { pairingAttemptId: attemptId, status: x.status, ...(x.status === 'bound' ? { bindingId: x.binding_id, epoch: Number(x.binding_epoch), bindingToken: x.binding_token, target: x.target } : {}) };
+  const r = await db.pool.query('SELECT status,binding_id,binding_epoch,binding_token,target,updated_at FROM hc_voice_pairing_attempts WHERE id=$1 AND device_id=$2', [attemptId, deviceId]);
+  if (!r.rowCount) throw Error('NOT_FOUND'); const x = r.rows[0];
+  if (x.status === 'processing' && Date.now() - new Date(x.updated_at).getTime() > 90_000) {
+    await db.pool.query("UPDATE hc_voice_pairing_attempts SET status='no_match',transcript=NULL,updated_at=now() WHERE id=$1 AND status='processing'", [attemptId]);
+    return { pairingAttemptId: attemptId, status: 'no_match' };
+  }
+  return { pairingAttemptId: attemptId, status: x.status, ...(x.status === 'bound' ? { bindingId: x.binding_id, epoch: Number(x.binding_epoch), bindingToken: x.binding_token, target: x.target } : {}) };
 }
 
 export async function readVoiceMultipart(req: { headers: Record<string, string | string[] | undefined>; [key: string]: any }) {

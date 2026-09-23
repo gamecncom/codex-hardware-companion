@@ -29,7 +29,7 @@ export class PgBusinessRepository {
     await this.db.pool.query(
       `CREATE TABLE IF NOT EXISTS projects(connector_id text not null,project_id text not null,name text not null,source text not null,primary key(connector_id,project_id));CREATE TABLE IF NOT EXISTS tasks(connector_id text not null,thread_id text not null,project_id text not null,title text not null,status text not null,revision numeric not null,updated_at timestamptz not null,primary key(connector_id,thread_id));CREATE TABLE IF NOT EXISTS hc_users(id text primary key,email text unique not null,created_at timestamptz not null default now());CREATE TABLE IF NOT EXISTS hc_bindings(id text primary key,user_id text not null,device_id text not null,connector_id text not null,epoch integer not null,state text not null,selection_revision numeric not null default 0,grants_version numeric not null default 0,active_task_ref jsonb,device_token text not null);CREATE TABLE IF NOT EXISTS hc_grants(binding_id text not null,connector_id text not null,project_id text not null,thread_id text not null,primary key(binding_id,connector_id,project_id,thread_id));CREATE TABLE IF NOT EXISTS hc_idempotency(principal text not null,operation text not null,client_request_id text not null,body_hash text not null,result jsonb not null,primary key(principal,operation,client_request_id));CREATE TABLE IF NOT EXISTS hc_messages(id text primary key,binding_id text not null,target jsonb not null,recording_id text not null,status text not null,command_id text unique,execution_id text);`,
     );
-    await this.db.pool.query("CREATE TABLE IF NOT EXISTS hc_connectors(id text primary key,email text not null,name text not null,token_hash text not null)");
+    await this.db.pool.query("CREATE TABLE IF NOT EXISTS hc_connectors(id text primary key,email text not null,name text not null,token_hash text not null); ALTER TABLE hc_connectors ADD COLUMN IF NOT EXISTS client_id text; CREATE UNIQUE INDEX IF NOT EXISTS hc_connectors_client_id_uq ON hc_connectors(client_id) WHERE client_id IS NOT NULL");
     await this.migrateAuth();
     await this.migratePairingSchema();
     await migrateCatalog(this.db);
@@ -166,13 +166,26 @@ export class PgBusinessRepository {
     if (!a.rowCount) throw Error("UNAUTHORIZED");
     const id = `cn-${randomUUID()}`,
       token = randomUUID() + randomUUID();
-    await this.db.pool.query("INSERT INTO hc_connectors VALUES($1,$2,$3,$4)", [
+    await this.db.pool.query("INSERT INTO hc_connectors(id,email,name,token_hash) VALUES($1,$2,$3,$4)", [
       id,
       a.rows[0].email,
       name,
       createHash("sha256").update(token).digest("hex"),
     ]);
     return { connectorId: id, token };
+  }
+  async registerAnonymousConnector(clientId: string, name: string) {
+    if (!/^[A-Za-z0-9_-]{16,128}$/.test(clientId)) throw Error("INVALID_REQUEST");
+    const token = randomUUID() + randomUUID();
+    const email = `client-${clientId}@local.invalid`;
+    const id = `cn-${randomUUID()}`;
+    const result = await this.db.pool.query(
+      `INSERT INTO hc_connectors(id,email,name,token_hash,client_id) VALUES($1,$2,$3,$4,$5)
+       ON CONFLICT (client_id) WHERE client_id IS NOT NULL DO UPDATE SET name=EXCLUDED.name,token_hash=EXCLUDED.token_hash
+       RETURNING id,client_id`,
+      [id, email, name || "Mac Connector", createHash("sha256").update(token).digest("hex"), clientId],
+    );
+    return { clientId, connectorId: result.rows[0].id as string, token };
   }
   async createPairing(connectorToken: string, requestId: string) {
     const h = createHash("sha256").update(connectorToken).digest("hex");

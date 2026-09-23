@@ -1,0 +1,43 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {mkdtemp,mkdir,readFile,rm,writeFile,chmod} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {dirname,join,resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
+
+const run=promisify(execFile);
+const repoRoot=resolve(dirname(fileURLToPath(import.meta.url)),'../../..');
+
+test('bootstrap uses the existing Connector upgrade path and preserves config', {skip:process.platform!=='darwin'||process.arch!=='arm64'}, async t=>{
+  const root=await mkdtemp(join(tmpdir(),'hc-bootstrap-existing-'));
+  t.after(()=>rm(root,{recursive:true,force:true}));
+  const home=join(root,'home'),installRoot=join(home,'Library','Application Support','HardwareCompanion','connector');
+  const current=join(installRoot,'current'),fixture=join(root,'fixture','release'),bin=join(root,'bin');
+  await mkdir(join(current,'bin'),{recursive:true}); await mkdir(join(fixture,'runtime'),{recursive:true}); await mkdir(bin,{recursive:true});
+  const config=join(home,'Library','Application Support','HardwareCompanion','config.json');
+  await writeFile(config,'{"bindingId":"keep-existing-binding"}\n');
+  const invocationLog=join(root,'invocations');
+  const companion=join(current,'bin','companion');
+  await writeFile(companion,'#!/bin/sh\nprintf "%s\\n" "$*" >> "$HC_TEST_INVOCATIONS"\n'); await chmod(companion,0o755);
+  await writeFile(join(current,'VERSION'),'0.3.5\n');
+  await writeFile(join(fixture,'VERSION'),'0.3.6\n');
+  await writeFile(join(fixture,'runtime','node'),'#!/bin/sh\nexit 0\n');
+  await chmod(join(fixture,'runtime','node'),0o755);
+  const archive=join(root,'release.tar.gz');
+  await run('tar',['-czf',archive,'-C',join(root,'fixture'),'release']);
+  const hash=createHash('sha256').update(await readFile(archive)).digest('hex');
+  const sidecar=join(root,'release.sha256');
+  await writeFile(sidecar,`${hash}  hardware-companion-macos-arm64-v0.3.6.tar.gz\n`);
+  const curl=join(bin,'curl');
+  await writeFile(curl,'#!/bin/sh\nwhile [ "$#" -gt 0 ]; do if [ "$1" = "--output" ]; then shift; out="$1"; fi; shift; done\ncase "$out" in *.sha256) cp "$HC_TEST_CHECKSUM" "$out";; *) cp "$HC_TEST_ARCHIVE" "$out";; esac\n');
+  await chmod(curl,0o755);
+  const script=join(repoRoot,'skills','hardware-companion','scripts','bootstrap-macos-arm64.sh');
+  await run('/bin/sh',[script],{env:{...process.env,HOME:home,HC_INSTALL_ROOT:installRoot,HC_TEST_ARCHIVE:archive,HC_TEST_CHECKSUM:sidecar,HC_TEST_INVOCATIONS:invocationLog,PATH:`${bin}:${process.env.PATH}`}});
+  const calls=(await readFile(invocationLog,'utf8')).trim().split('\n');
+  assert.match(calls[0],/^update --from .*\/release --install-root /);
+  assert.match(calls[1],/^service install --install-root /);
+  assert.equal(await readFile(config,'utf8'),'{"bindingId":"keep-existing-binding"}\n');
+});

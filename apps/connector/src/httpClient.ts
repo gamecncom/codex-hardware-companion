@@ -13,6 +13,7 @@ export class CompanionHttpClient {
   devices(){return this.call<any[]>('GET','/v1/devices');}
   renameDevice(deviceId:string,name:string,clientRequestId:string){return this.call<any>('PATCH',`/v1/devices/${encodeURIComponent(deviceId)}`,{name,clientRequestId});}
   register(userId?:string,name='Mac Connector'){return this.call<{connectorId:string;token:string}>('POST','/v1/connectors/register',{...(userId?{userId}:{}),name});}
+  registerAnonymous(clientId:string,name='Mac Connector'){return this.call<{clientId:string;connectorId:string;token:string}>('POST','/v1/connectors/bootstrap',{clientId,name});}
   bindTest(userId:string,deviceId:string,clientRequestId:string){return this.call<any>('POST','/v1/test/bind',{userId,connectorId:this.options.connectorId,deviceId,clientRequestId});}
   pair(clientRequestId:string){return this.call<any>('POST','/v1/pairings',{clientRequestId});}
   startDevicePairing(deviceBootstrap:string,clientRequestId:string){const c=new CompanionHttpClient({...this.options,deviceToken:deviceBootstrap,token:this.options.token});return c.call<any>('POST','/v1/device-pairings',{connectorToken:this.options.token,clientRequestId});}

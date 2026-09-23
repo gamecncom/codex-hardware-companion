@@ -3,7 +3,7 @@ import type { Command, Grant, LinkStatus, MessageStatus, ProjectSummary, TaskRef
 import { assertTaskRef, nowIso } from '@companion/protocol';
 
 export type User={id:string;email:string};
-export type Connector={id:string;userId:string;name:string;online:boolean;connectionEpoch:string;tokenHash:string};
+export type Connector={id:string;userId:string;clientId?:string;name:string;online:boolean;connectionEpoch:string;tokenHash:string};
 export type Device={id:string;name:string;bootstrap:string};
 export type Binding={id:string;userId:string;connectorId:string;deviceId:string;epoch:number;state:'active'|'revoked';activeTaskRef?:TaskRef;selectionRevision:string;grantsVersion:string;deviceToken:string};
 export type Recording={id:string;bindingId:string;epoch:number;target:TaskRef;selectionRevision:string;clientRequestId:string;status:'processing'|'ready'|'failed'|'cancelled';transcript?:string};
@@ -18,7 +18,8 @@ export class MemoryStore {
   devicePairings=new Map<string,{id:string;deviceId:string;connectorId:string;pollSecret:string;code?:string;claimedUserId?:string;expiresAt:string;confirmedBindingId?:string}>();
   projects=new Map<string,ProjectSummary>(); tasks=new Map<string,TaskSummary>(); grants=new Map<string,Set<string>>(); recordings=new Map<string,Recording>(); messages=new Map<string,Message>(); commands=new Map<string,Command>(); idempotency=new Map<string,Idempotency>();
   addUser(email:string){const user={id:randomUUID(),email:email.trim().toLowerCase()}; this.users.set(user.id,user); return user;}
-  addConnector(userId:string,name='Mac Connector'){const id=`cn-${randomUUID()}`; const token=randomUUID()+randomUUID(); const c={id,userId,name,online:true,connectionEpoch:'1',tokenHash:hash(token)}; this.connectors.set(id,c); this.connectorSecrets.set(id,token); return {connector:c,token};}
+  addConnector(userId:string,name='Mac Connector',clientId?:string){const id=`cn-${randomUUID()}`; const token=randomUUID()+randomUUID(); const c={id,userId,clientId,name,online:true,connectionEpoch:'1',tokenHash:hash(token)}; this.connectors.set(id,c); this.connectorSecrets.set(id,token); return {connector:c,token};}
+  addAnonymousConnector(clientId:string,name='Mac Connector'){const existing=[...this.connectors.values()].find(c=>c.clientId===clientId);const user=existing?this.users.get(existing.userId)??this.addUser(`client-${clientId}@local.invalid`):this.addUser(`client-${clientId}@local.invalid`);if(existing){const token=randomUUID()+randomUUID();existing.name=name;existing.tokenHash=hash(token);this.connectorSecrets.set(existing.id,token);return {connector:existing,token};}return this.addConnector(user.id,name,clientId);}
   addDevice(name='Hardware Companion'){const id=`dev-${randomUUID()}`,bootstrap=randomUUID()+randomUUID(); const d={id,name,bootstrap}; this.devices.set(id,d); return {device:d,bootstrap};}
   seedCatalog(connectorId:string,projects:ProjectSummary[],tasks:TaskSummary[]){for(const p of projects)this.projects.set(`${connectorId}:${p.projectId}`,p);for(const t of tasks)this.tasks.set(`${connectorId}:${t.threadId}`,t);}
   key(ref:TaskRef){return `${ref.connectorId}:${ref.threadId}`;}

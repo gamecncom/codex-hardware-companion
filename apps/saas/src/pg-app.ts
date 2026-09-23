@@ -35,6 +35,7 @@ export function createPgApp(db: PostgresStore, options: DevicePairingOptions & {
     if (req.method === 'POST' && u.pathname === '/v1/auth/email/start') { if (!options.mailProvider) throw Error('CONFIG_MISSING'); const x = await read(req); return send(res, 200, apiOk(id, await repo.emailStart(x.email, options.mailProvider))); }
     if (req.method === 'POST' && u.pathname === '/v1/auth/email/verify') { const x = await read(req); return send(res, 200, apiOk(id, await repo.emailVerify(x.email, x.code))); }
     if (req.method === 'POST' && u.pathname === '/v1/connectors/register') { const x = await read(req); return send(res, 200, apiOk(id, await repo.registerConnector(token, x.name ?? 'Connector'))); }
+    if (req.method === 'POST' && u.pathname === '/v1/connectors/bootstrap') { const x = await read(req); return send(res, 201, apiOk(id, await repo.registerAnonymousConnector(x.clientId, x.name ?? 'Mac Connector'))); }
     if (req.method === 'POST' && u.pathname === '/v1/pairings') { const x = await read(req); return send(res, 200, apiOk(id, await createV03Pairing(db, token, x.clientRequestId))); }
     if (req.method === 'POST' && u.pathname === '/v1/device-pairings') { const x = await read(req); return send(res, 200, apiOk(id, await pairing.start(token, x.clientRequestId))); }
     const pairingPoll = /^\/v1\/device-pairings\/([^/]+)\/poll$/.exec(u.pathname);
