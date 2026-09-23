@@ -9,7 +9,9 @@ test('uses the latest Codex turn when thread status is notLoaded', () => {
   assert.equal(normalizeThread(snapshot('notLoaded', [turn('old', 'completed'), turn('latest', 'completed')])).status, 'completed');
   assert.equal(normalizeThread(snapshot('unknown', [turn('latest', 'failed')])).status, 'failed');
   assert.equal(normalizeThread(snapshot('idle', [turn('latest', 'inProgress')])).status, 'running');
-  assert.equal(normalizeThread(snapshot('unknown', [turn('latest', 'interrupted')])).status, 'failed');
+  assert.equal(normalizeThread(snapshot('unknown', [turn('latest', 'interrupted')])).status, 'unknown');
+  assert.equal(normalizeThread(snapshot('notLoaded', [turn('latest', 'interrupted')])).status, 'unknown');
+  assert.equal(normalizeThread(snapshot('failed', [turn('latest', 'interrupted')])).status, 'failed');
 });
 
 test('uses a completed latest turn when the thread status is stale failed', () => {

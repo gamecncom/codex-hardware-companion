@@ -25,14 +25,14 @@ test('bootstrap uses the existing Connector upgrade path and preserves config', 
   const candidateCompanion=join(fixture,'bin','companion');
   await writeFile(candidateCompanion,'#!/bin/sh\nprintf "candidate:%s\\n" "$*" >> "$HC_TEST_INVOCATIONS"\n'); await chmod(candidateCompanion,0o755);
   await writeFile(join(current,'VERSION'),'0.3.5\n');
-  await writeFile(join(fixture,'VERSION'),'0.3.7\n');
+  await writeFile(join(fixture,'VERSION'),'0.3.8\n');
   await writeFile(join(fixture,'runtime','node'),'#!/bin/sh\nexit 0\n');
   await chmod(join(fixture,'runtime','node'),0o755);
   const archive=join(root,'release.tar.gz');
   await run('tar',['-czf',archive,'-C',join(root,'fixture'),'release']);
   const hash=createHash('sha256').update(await readFile(archive)).digest('hex');
   const sidecar=join(root,'release.sha256');
-  await writeFile(sidecar,`${hash}  hardware-companion-macos-arm64-v0.3.7.tar.gz\n`);
+  await writeFile(sidecar,`${hash}  hardware-companion-macos-arm64-v0.3.8.tar.gz\n`);
   const curl=join(bin,'curl');
   await writeFile(curl,'#!/bin/sh\nwhile [ "$#" -gt 0 ]; do if [ "$1" = "--output" ]; then shift; out="$1"; fi; shift; done\ncase "$out" in *.sha256) cp "$HC_TEST_CHECKSUM" "$out";; *) cp "$HC_TEST_ARCHIVE" "$out";; esac\n');
   await chmod(curl,0o755);

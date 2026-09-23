@@ -39,3 +39,15 @@ test('uses normalized authorized status in catalog and task snapshots', async ()
   assert.equal(page.payload.items[0].status, 'completed');
   assert.equal(task.payload.status, 'completed');
 });
+
+test('a notLoaded active Codex turn is not published as a failed task', async () => {
+  const messages:any[] = [];
+  const adapter:any = {
+    async listThreads() { return { data: [{ threadId: 'thread-a', title: 'task', titleSource: 'codex', cwd: '/tmp/one', status: 'unknown' }] }; },
+    async readThread() { return { threadId: 'thread-a', cwd: '/tmp/one', status: 'notLoaded', turns: [{ id: 'turn-a', status: 'interrupted', items: [] }], raw: {} }; },
+  };
+  const sync = new CatalogSync(adapter, { send(message:any) { messages.push(message); } }, [addMapping('OneTouch', '/tmp/one')], () => true);
+  await sync.sync();
+  assert.equal(messages.find(x => x.type === 'task.snapshot').payload.status, 'unknown');
+  assert.equal(messages.find(x => x.type === 'catalog.snapshot.page').payload.items[0].status, 'unknown');
+});
