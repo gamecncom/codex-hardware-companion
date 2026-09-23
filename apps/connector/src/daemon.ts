@@ -23,20 +23,28 @@ export class CompanionDaemon {
   private blockedThreads = new Set<string>();
   private helloInFlight?: Promise<void>;
 
+  private reportBackgroundFailure(scope: string, error: unknown) {
+    if (error instanceof Error && error.message === 'WSS_NOT_CONNECTED') return;
+    console.error(`[hardware-companion] ${scope} failed:`, error instanceof Error ? error.message : String(error));
+  }
+
   constructor(readonly options: DaemonOptions) {}
 
   start() {
     if (this.timer || this.stopping) return;
-    this.ensureRestored();
-    this.options.transport?.connect();
-    this.options.transport?.on('open', () => { void this.sendHello(); void this.options.syncOnConnect?.(); });
+    this.options.transport?.on('open', () => {
+      void this.sendHello().catch(error => this.reportBackgroundFailure('hello', error));
+      void this.options.syncOnConnect?.().catch(error => this.reportBackgroundFailure('catalog sync', error));
+    });
+    this.options.transport?.on('error', error => this.reportBackgroundFailure('transport', error));
     this.options.transport?.on('message', (message: any) => {
       if (message?.type === 'connector.welcome' && message.payload?.connectionEpoch) this.options.connectionEpoch = String(message.payload.connectionEpoch);
-      if (message?.type === 'command.available' && message.payload?.commandId) { this.pending.add(String(message.payload.commandId)); void this.tick(); }
+      if (message?.type === 'command.available' && message.payload?.commandId) { this.pending.add(String(message.payload.commandId)); void this.tick().catch(error => this.reportBackgroundFailure('command tick', error)); }
     });
+    this.options.transport?.connect();
     this.heartbeat = setInterval(() => { if (!this.stopping && this.options.transport) try { this.options.transport.send({ protocol: 'hc/1', type: 'heartbeat', seq: String(Date.now()) }); } catch {} }, 10000);
-    this.timer = setInterval(() => void this.tick(), this.options.pollMs ?? 2000);
-    void this.tick();
+    this.timer = setInterval(() => void this.tick().catch(error => this.reportBackgroundFailure('poll tick', error)), this.options.pollMs ?? 2000);
+    void this.tick().catch(error => this.reportBackgroundFailure('initial tick', error));
   }
 
   private async sendHello() {

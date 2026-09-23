@@ -1,6 +1,6 @@
 # Codex Hardware Companion v0.3
 
-硬件—SaaS—Codex 连接软件。Apple 芯片 Mac 当前发布版本为 v0.3.6；云端已部署配套协议，完整新 Mac/真机演示仍待现场验收。
+硬件—SaaS—Codex 连接软件。Apple 芯片 Mac 当前发布版本为 v0.3.7；云端已部署配套协议，完整新 Mac/真机演示仍待现场验收。
 
 v0.3 交付材料见 [docs/v0.3](docs/v0.3/NEW-MAC-QUICKSTART.md)，公开 arm64 包及 SHA-256 见 [RELEASE-MANIFEST](docs/v0.3/RELEASE-MANIFEST.md)。
 

@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 export const SERVICE_LABEL = 'cn.hardware-companion.connector';
@@ -137,8 +138,11 @@ export class ServiceManager {
     if (!current.loaded) return { stopped: false, loaded: false, label: this.label };
     const result = await this.launchctl(['bootout', this.target]);
     if (result.code !== 0) throw new Error(`LAUNCHCTL_STOP_FAILED:${result.stderr.trim() || result.code}`);
-    const after = await this.print();
-    if (after.loaded) throw new Error('SERVICE_STILL_LOADED_AFTER_STOP');
+    for (let attempt = 0; attempt < 50; attempt++) {
+      if (!(await this.print()).loaded) return { stopped: true, loaded: false, label: this.label };
+      await delay(100);
+    }
+    if ((await this.print()).loaded) throw new Error('SERVICE_STILL_LOADED_AFTER_STOP');
     return { stopped: true, loaded: false, label: this.label };
   }
 

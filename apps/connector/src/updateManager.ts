@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import { isAbsolute, join, relative, resolve } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 
 export type UpdateService = { stop(): Promise<unknown>; start(): Promise<unknown> };
 export type UpdateResult = {
@@ -15,18 +16,31 @@ type UpdateManagerOptions = {
   installRoot: string;
   service: UpdateService;
   healthCheck: (expectedVersion?: string) => Promise<boolean>;
+  healthWaitMs?: number;
 };
 
 export class UpdateManager {
   readonly installRoot: string;
   readonly service: UpdateService;
   readonly healthCheck: (expectedVersion?: string) => Promise<boolean>;
+  readonly healthWaitMs: number;
 
   constructor(options: UpdateManagerOptions) {
     if (!isAbsolute(options.installRoot)) throw new Error('INSTALL_ROOT_MUST_BE_ABSOLUTE');
     this.installRoot = resolve(options.installRoot);
     this.service = options.service;
     this.healthCheck = options.healthCheck;
+    this.healthWaitMs = options.healthWaitMs ?? 20_000;
+  }
+
+  private async waitHealthy(version?: string): Promise<boolean> {
+    const deadline = Date.now() + this.healthWaitMs;
+    do {
+      if (await this.healthCheck(version).catch(() => false)) return true;
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) return false;
+      await delay(Math.min(250, remaining));
+    } while (true);
   }
 
   private get currentPath() { return join(this.installRoot, 'current'); }
@@ -94,7 +108,7 @@ export class UpdateManager {
       await fs.rename(staging, this.currentPath);
       candidateInstalled = true;
       await this.service.start();
-      if (!(await this.healthCheck(candidateVersion))) throw new Error('UPDATE_HEALTH_FAILED');
+      if (!(await this.waitHealthy(candidateVersion))) throw new Error('UPDATE_HEALTH_FAILED');
       await fs.rm(previousBackup, { recursive: true, force: true });
       return { updated: true, rolledBack: false, version: candidateVersion, previousVersion, installRoot: this.installRoot };
     } catch (error) {
@@ -120,7 +134,7 @@ export class UpdateManager {
       if (!rollbackError && (candidateInstalled || movedCurrent)) {
         try {
           await this.service.start();
-          if (!(await this.healthCheck(previousVersion))) rollbackError = new Error('UPDATE_ROLLBACK_HEALTH_FAILED');
+          if (!(await this.waitHealthy(previousVersion))) rollbackError = new Error('UPDATE_ROLLBACK_HEALTH_FAILED');
         } catch (startError) { rollbackError = startError; }
       }
       if (rollbackError) throw new Error(`UPDATE_ROLLBACK_FAILED:${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`);

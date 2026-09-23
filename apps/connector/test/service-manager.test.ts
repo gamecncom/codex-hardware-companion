@@ -59,6 +59,24 @@ test('service manager starts, stops, and uninstalls only its own plist', async (
   assert.equal(fake.isLoaded(), false);
 });
 
+test('service stop waits for launchctl bootout to finish unloading', async t => {
+  const home = await mkdtemp(join(tmpdir(), 'hc-service-delayed-stop-'));
+  t.after(() => rm(home, { recursive: true, force: true }));
+  let loaded = true;
+  let printsAfterBootout = 0;
+  let bootedOut = false;
+  const manager = new ServiceManager({ homeDir: home, launchctl: async args => {
+    if (args[0] === 'bootout') { bootedOut = true; return { code: 0, stdout: '', stderr: '' }; }
+    if (args[0] === 'print') {
+      if (bootedOut && ++printsAfterBootout >= 3) loaded = false;
+      return loaded ? { code: 0, stdout: 'state = waiting\n', stderr: '' } : { code: 113, stdout: '', stderr: 'Could not find service' };
+    }
+    return { code: 1, stdout: '', stderr: 'unexpected' };
+  } });
+  assert.deepEqual(await manager.stop(), { stopped: true, loaded: false, label: manager.label });
+  assert.ok(printsAfterBootout >= 3);
+});
+
 test('service manager does not report loaded when bootstrap fails', async (t) => {
   const home = await mkdtemp(join(tmpdir(), 'hc-service-'));
   t.after(() => rm(home, { recursive: true, force: true }));

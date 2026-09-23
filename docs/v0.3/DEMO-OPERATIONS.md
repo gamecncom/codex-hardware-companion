@@ -6,9 +6,9 @@
 
 在 Codex 新任务中粘贴：
 
-> 请使用 Codex 的 Skill 安装能力，从公开 GitHub 仓库 `gamecncom/codex-hardware-companion` 的 `v0.3.6` tag 安装 `skills/hardware-companion`。本机是 Apple Silicon Mac。安装后执行这个 Skill 自带的 `scripts/bootstrap-macos-arm64.sh`，只从同一 `v0.3.6` Release 下载 arm64 Connector 和 `.sha256` 并校验；若已有 Connector，请安全升级并保留现有配置与设备绑定，不复制别的电脑凭据，也不要解绑、配对或发消息。完成后检查 Skill 和 Connector 是否可用；若当前任务尚未发现新 Skill，请新开一个 Codex 任务再使用。
+> 请使用 Codex 的 Skill 安装能力，从公开 GitHub 仓库 `gamecncom/codex-hardware-companion` 的 `v0.3.7` tag 安装 `skills/hardware-companion`。本机是 Apple Silicon Mac。安装后执行这个 Skill 自带的 `scripts/bootstrap-macos-arm64.sh`，只从同一 `v0.3.7` Release 下载 arm64 Connector 和 `.sha256` 并校验；若已有 Connector，请安全升级并保留现有配置与设备绑定，不复制别的电脑凭据，也不要解绑、配对或发消息。完成后检查 Skill 和 Connector 是否可用；若当前任务尚未发现新 Skill，请新开一个 Codex 任务再使用。
 
-Skill 的固定目录：[v0.3.6 skills/hardware-companion](https://github.com/gamecncom/codex-hardware-companion/tree/v0.3.6/skills/hardware-companion)。Connector 已内置演示 SaaS 地址 `https://gamecncom.nat200.top`，新 Mac 不需要手填云端地址或组装 JSON。
+Skill 的固定目录：[v0.3.7 skills/hardware-companion](https://github.com/gamecncom/codex-hardware-companion/tree/v0.3.7/skills/hardware-companion)。Connector 已内置演示 SaaS 地址 `https://gamecncom.nat200.top`，新 Mac 不需要手填云端地址或组装 JSON。
 
 ## 安装后第一次使用的一句话
 

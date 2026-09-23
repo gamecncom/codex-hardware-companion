@@ -47,3 +47,23 @@ test('hello is sent once per transport open and welcome does not create a hello 
   for (let i = 0; i < 20 && transport.sent.filter(item => item.type === 'connector.hello').length < 2; i++) await new Promise(resolve => setTimeout(resolve, 5));
   assert.equal(transport.sent.filter(item => item.type === 'connector.hello').length, 2);
 });
+
+test('a catalog failure after transport open does not crash the daemon and reconnect retries', async t => {
+  const transport = new FixtureTransport();
+  let syncs = 0;
+  const instance = new CompanionDaemon({
+    connectionEpoch: '1', transport: transport as any,
+    client: { claim: async () => undefined } as any,
+    ledger: { list: async () => [], find: async () => undefined } as any,
+    adapter: { detect: async () => ({ list: true, read: true, enqueue: true, version: 'v' }), readIdentity: async () => ({ available: true, fingerprint: 'fixture' }), close: async () => {} } as any,
+    syncOnConnect: async () => { syncs++; if (syncs === 1) throw new Error('WSS_NOT_CONNECTED'); },
+    catalogPollMs: 60_000,
+  });
+  t.after(() => instance.stop()); instance.start();
+  for (let i = 0; i < 20 && syncs < 1; i++) await new Promise(resolve => setTimeout(resolve, 5));
+  assert.ok(syncs >= 1);
+  const beforeReconnect = syncs;
+  transport.emit('open');
+  for (let i = 0; i < 20 && syncs <= beforeReconnect; i++) await new Promise(resolve => setTimeout(resolve, 5));
+  assert.ok(syncs > beforeReconnect);
+});

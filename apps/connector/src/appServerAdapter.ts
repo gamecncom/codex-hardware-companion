@@ -38,5 +38,13 @@ export class AppServerAdapter implements CodexAdapter {
     }
     return {available:false,source:'unavailable'};
   }
-  async close(){ if(this.child){this.child.kill('SIGTERM'); await once(this.child,'exit').catch(()=>{});this.child=undefined;} }
+  async close(){
+    const child=this.child;
+    if(!child)return;
+    if(child.exitCode!==null||child.signalCode!==null){this.child=undefined;return;}
+    const exited=once(child,'exit');
+    child.kill('SIGTERM');
+    const timeout=setTimeout(()=>{if(child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');},1000);
+    try{await exited.catch(()=>{});}finally{clearTimeout(timeout);if(this.child===child)this.child=undefined;}
+  }
 }

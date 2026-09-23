@@ -43,7 +43,7 @@ test('failed health check restores previous and reports rollback', async (t) => 
   await mkdir(join(root, 'current'), { recursive: true }); await writeFile(join(root, 'current', 'VERSION'), '0.2.0\n');
   const service = fakeService();
   let checks = 0;
-  const result = await new UpdateManager({ installRoot: root, service, healthCheck: async () => ++checks === 2 }).update(candidate);
+  const result = await new UpdateManager({ installRoot: root, service, healthWaitMs: 0, healthCheck: async () => ++checks === 2 }).update(candidate);
   assert.equal(result.rolledBack, true); assert.equal(result.updated, false); assert.equal(result.version, '0.2.0');
   assert.equal(await readFile(join(root, 'current', 'VERSION'), 'utf8'), '0.2.0\n');
   assert.deepEqual(service.calls, ['stop', 'start', 'stop', 'start']);
@@ -79,7 +79,7 @@ test('rollback service restart failure is reported instead of success', async (t
   await mkdir(join(root, 'current'), { recursive: true }); await writeFile(join(root, 'current', 'VERSION'), '0.2.0\n');
   let starts = 0;
   const service = { stop: async () => {}, start: async () => { starts += 1; if (starts === 2) throw new Error('RESTART_FAILED'); } };
-  await assert.rejects(() => new UpdateManager({ installRoot: root, service, healthCheck: async () => false }).update(candidate), /UPDATE_ROLLBACK_FAILED:RESTART_FAILED/);
+  await assert.rejects(() => new UpdateManager({ installRoot: root, service, healthWaitMs: 0, healthCheck: async () => false }).update(candidate), /UPDATE_ROLLBACK_FAILED:RESTART_FAILED/);
   assert.equal(await readFile(join(root, 'current', 'VERSION'), 'utf8'), '0.2.0\n');
 });
 
@@ -88,6 +88,20 @@ test('candidate overlapping install root is rejected before service mutation', a
   const service = fakeService();
   await assert.rejects(() => new UpdateManager({ installRoot: root, service, healthCheck: async () => true }).update(join(root, 'candidate')), /RELEASE_INSTALL_ROOT_OVERLAP/);
   assert.deepEqual(service.calls, []);
+});
+
+test('update waits for a newly started service to become healthy', async t => {
+  const base = await mkdtemp(join(tmpdir(), 'hc-update-delayed-health-'));
+  t.after(() => rm(base, { recursive: true, force: true }));
+  const root = join(base, 'install'); const candidate = join(base, 'candidate');
+  await release(candidate, '0.2.1', 'new');
+  await mkdir(join(root, 'current'), { recursive: true });
+  await writeFile(join(root, 'current', 'VERSION'), '0.2.0\n');
+  let checks = 0;
+  const result = await new UpdateManager({ installRoot: root, service: fakeService(), healthWaitMs: 1000, healthCheck: async () => ++checks >= 3 }).update(candidate);
+  assert.equal(result.updated, true);
+  assert.equal(result.rolledBack, false);
+  assert.equal(checks, 3);
 });
 
 test('update reuses the install-root plist and health-checks the new version', async (t) => {
