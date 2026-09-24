@@ -82,6 +82,18 @@ export class UpdateManager {
     };
     if (inside(candidate, this.installRoot) || inside(this.installRoot, candidate)) throw new Error('RELEASE_INSTALL_ROOT_OVERLAP');
     const candidateVersion = await this.verifyRelease(candidate);
+    if (await this.version(this.currentPath) === candidateVersion) {
+      const currentValid = await this.verifyRelease(this.currentPath).then(() => true, () => false);
+      if (currentValid) {
+        const [currentChecksums, candidateChecksums] = await Promise.all([
+          fs.readFile(join(this.currentPath, 'checksums.sha256'), 'utf8'),
+          fs.readFile(join(candidate, 'checksums.sha256'), 'utf8'),
+        ]);
+        if (currentChecksums === candidateChecksums && await this.healthCheck(candidateVersion).catch(() => false)) {
+          return { updated: false, rolledBack: false, version: candidateVersion, previousVersion: candidateVersion, installRoot: this.installRoot };
+        }
+      }
+    }
     await fs.mkdir(this.installRoot, { recursive: true });
     const staging = join(this.installRoot, `.staging-${process.pid}-${Date.now()}`);
     await fs.rm(staging, { recursive: true, force: true });

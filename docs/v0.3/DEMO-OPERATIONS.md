@@ -6,9 +6,9 @@
 
 在 Codex 新任务中粘贴：
 
-> 请使用 Codex 的 Skill 安装能力，从公开 GitHub 仓库 `gamecncom/codex-hardware-companion` 的 `v0.3.8` tag 安装 `skills/hardware-companion`。本机是 Apple Silicon Mac。安装后执行这个 Skill 自带的 `scripts/bootstrap-macos-arm64.sh`，只从同一 `v0.3.8` Release 下载 arm64 Connector 和 `.sha256` 并校验；若已有 Connector，请安全升级并保留现有配置与设备绑定，不复制别的电脑凭据，也不要解绑、配对或发消息。完成后检查 Skill 和 Connector 是否可用；若当前任务尚未发现新 Skill，请新开一个 Codex 任务再使用。
+> 请从公开 GitHub 仓库 `gamecncom/codex-hardware-companion` 的 `v0.3.10` 安装 `skills/hardware-companion`，按 Skill 自动完成这台 Apple 芯片 Mac 的轻量 Connector 安装、兼容 Node 检查和后台状态核验，下载优先使用 `https://gamecncom.nat200.top/v1/install` 并在失败时回退同版 GitHub Release，保留现有身份、授权和设备绑定，暂不解绑、配对、刷机或发消息。
 
-Skill 的固定目录：[v0.3.8 skills/hardware-companion](https://github.com/gamecncom/codex-hardware-companion/tree/v0.3.8/skills/hardware-companion)。Connector 已内置演示 SaaS 地址 `https://gamecncom.nat200.top`，新 Mac 不需要手填云端地址或组装 JSON。
+Skill 的固定目录：[v0.3.10 skills/hardware-companion](https://github.com/gamecncom/codex-hardware-companion/tree/v0.3.10/skills/hardware-companion)。同版 [Skill 归档包](https://gamecncom.nat200.top/v1/install/v0.3.10/hardware-companion-skill-v0.3.10.tar.gz) 也由自有 HTTPS 提供。Connector 已内置演示 SaaS 地址 `https://gamecncom.nat200.top`，新 Mac 不需要手填云端地址或组装 JSON。
 
 ## 安装后第一次使用的一句话
 
@@ -60,7 +60,7 @@ Skill 的固定目录：[v0.3.8 skills/hardware-companion](https://github.com/ga
 | 阶段 | 通过证据 | 当前状态 |
 |---|---|---|
 | Skill 安装 | 新任务可发现 Skill，bootstrap 公开下载并校验通过 | 主机入口已发布，待新 Mac |
-| Connector 安装 | bundled Node、wrapper、默认安装目录和 LaunchAgent 可检查 | 主机验证通过，待新 Mac |
+| Connector 安装 | 轻量包、独立 Node 缓存、wrapper、默认安装目录和 LaunchAgent 可检查 | 主机验证通过，待新 Mac |
 | SaaS 关联 | 独立 connectorId、SaaS healthz、Connector 心跳 | 云端已部署，待新 Mac 账号现场 |
 | Codex 读取 | account/read、thread/list、thread/read 通过 | 开发机验证通过，待新 Mac |
 | 任务授权 | 用户确认后的精确 TaskRef 写入 preset | PG/Connector 验证通过，待真实任务 |

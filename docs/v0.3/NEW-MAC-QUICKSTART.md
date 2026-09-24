@@ -2,8 +2,8 @@
 
 适用范围：Apple 芯片 Mac、macOS、已登录 Codex；本期不支持 Intel Mac 和 Windows。
 
-1. 在 Codex 新任务粘贴 `docs/v0.3/DEMO-OPERATIONS.md` 中的“第一句话”，从公开 GitHub `v0.3.8` tag 的 Skill 目录安装。
-2. 执行 Skill 中的 arm64 bootstrap；它固定下载 `hardware-companion-macos-arm64-v0.3.8.tar.gz` 及同名 `.sha256`，并安装或升级 `~/Library/Application Support/HardwareCompanion/connector`，保留既有本机配置。
+1. 在 Codex 新任务粘贴 `docs/v0.3/DEMO-OPERATIONS.md` 中的“第一句话”，从公开 GitHub `v0.3.10` tag 的 Skill 目录安装。
+2. 执行 Skill 中的 arm64 bootstrap；同版本且校验有效时不下载、不重启。新安装或升级优先从自有 HTTPS 下载对应版本的轻量业务包与校验文件，失败回退 GitHub；仅在缺少兼容 Node 时下载固定的 Node.js 24.21.0 macOS arm64 包到独立缓存。Node 不全局安装，业务升级不清除缓存。保留既有本机配置。
 3. 不需要手填 SaaS 地址、邮箱验证码、演示码或浏览器登录。全新 Mac 首次执行 `companion init --json` 时生成并持久化本机 `clientId`，自动向 `https://gamecncom.nat200.top` 注册独立 connector 凭证；已有安装则展示现有身份，不冒充新注册。不复制另一台电脑的配置、凭证或数据库。
 4. 分别检查 `status`、`doctor`、`service status` 和 SaaS 心跳；安装 Skill 不等于已完成任务授权或设备绑定。
 5. 映射当前 Mac 的真实项目，读取并确认真实任务，再用 `task authorize` 写入授权集和首选任务。

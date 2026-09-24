@@ -15,7 +15,7 @@ if (!deviceBootstraps || Array.isArray(deviceBootstraps) || typeof deviceBootstr
 const port=Number(process.env.PORT??3020);
 const asr=process.env.ASR_PROVIDER ? createAsrAdapter() : undefined;
 const mailProvider=process.env.HC_SMTP_HOST ? createSmtpMailProvider() : undefined;
-const server=createPgApp(db, { publicBaseUrl: process.env.HC_PUBLIC_BASE_URL, deviceBootstraps, asr, mailProvider });
+const server=createPgApp(db, { publicBaseUrl: process.env.HC_PUBLIC_BASE_URL, deviceBootstraps, asr, mailProvider, installAssetRoot: process.env.HC_INSTALL_ASSET_ROOT });
 server.on('close', () => mailProvider?.close());
 attachPgChannel(server, db);
 server.listen(port,'127.0.0.1',()=>console.log(`codex-hardware-companion SaaS listening on ${port}`));

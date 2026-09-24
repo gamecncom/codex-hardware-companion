@@ -11,7 +11,7 @@ import { createHash } from 'node:crypto';
 
 const run = promisify(execFile);
 
-test('macOS package wrapper runs from a spaced staging path and embeds skill/checksums', async t => {
+test('macOS light package excludes Node and embeds skill/checksums', async t => {
   const root = await mkdtemp(join(tmpdir(), 'hc-package-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const output = join(root, 'release path with spaces');
@@ -27,7 +27,8 @@ test('macOS package wrapper runs from a spaced staging path and embeds skill/che
   const packageRoot = join(output, `hardware-companion-macos-${process.arch}-v${version}`);
   const wrapper = join(packageRoot, 'bin', 'companion');
   const config = join(root, 'config path with spaces.json');
-  const wrapperResult = await run(wrapper, ['unknown-operation', '--config', config], { env: { PATH: '/usr/bin:/bin' } }).catch(error => error);
+  await assert.rejects(() => stat(join(packageRoot, 'runtime', 'node')));
+  const wrapperResult = await run(wrapper, ['unknown-operation', '--config', config], { env: { PATH: '/usr/bin:/bin', HC_COMPANION_NODE: process.execPath } }).catch(error => error);
   assert.equal(wrapperResult.code, 1);
   const outputJson = JSON.parse(wrapperResult.stdout);
   assert.equal(outputJson.ok, false);

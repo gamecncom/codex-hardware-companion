@@ -17,11 +17,13 @@ import { handleAlertRequest } from './pg-alerts.js';
 import { getTaskDetail } from './pg-task-detail.js';
 import { createV03Pairing, getGrantPreset, putGrantPreset, prepareUnbind, confirmUnbind, readVoiceMultipart, voicePair, voicePairStatus, deviceIdFromBootstrap } from './pg-v03.js';
 import type { AsrAdapter } from './asr.js';
+import { serveInstallAsset } from './install-assets.js';
 async function read(r: IncomingMessage) { let s = ''; for await (const c of r)
     s += c; return s ? JSON.parse(s) : {}; }
 const send = (r: any, s: number, v: any) => { r.statusCode = s; r.setHeader('content-type', 'application/json'); r.end(JSON.stringify(v)); };
-export function createPgApp(db: PostgresStore, options: DevicePairingOptions & { asr?: AsrAdapter; mailProvider?: { send(email: string, code: string): Promise<void> } } = {}) { const repo = new PgBusinessRepository(db); const pairing = new PgDevicePairing(db, options); return createServer(async (req, res) => { const id = randomUUID().replaceAll('-', '').slice(0, 32); try {
+export function createPgApp(db: PostgresStore, options: DevicePairingOptions & { asr?: AsrAdapter; mailProvider?: { send(email: string, code: string): Promise<void> }; installAssetRoot?: string } = {}) { const repo = new PgBusinessRepository(db); const pairing = new PgDevicePairing(db, options); return createServer(async (req, res) => { const id = randomUUID().replaceAll('-', '').slice(0, 32); try {
     const u = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`), token = (req.headers.authorization ?? '').replace(/^Bearer\s+/, '');
+    if (await serveInstallAsset(req, res, u.pathname, options.installAssetRoot)) return;
     if (await new PgConnectorLogin(db, { publicBaseUrl: options.publicBaseUrl ?? '' }).handle(req, res, u.pathname)) return;
     if (req.method === 'GET' && u.pathname === '/pair') {
         const pairingId = u.searchParams.get('devicePairingId'), challenge = u.searchParams.get('challenge');

@@ -104,3 +104,14 @@ test('service status distinguishes loaded from running', async (t) => {
   assert.equal(status.loaded, true);
   assert.equal(status.running, false);
 });
+
+test('installed service pins the validated Node executable outside the business release', async t => {
+  const home = await mkdtemp(join(tmpdir(), 'hc-external-node-'));
+  t.after(() => rm(home, { recursive: true, force: true }));
+  const installRoot = join(home, 'connector with spaces');
+  const fake = fakeLaunchctl();
+  const manager = new ServiceManager({ homeDir: home, installRoot, nodePath: '/tmp/runtime cache/bin/node', launchctl: fake.run });
+  await manager.install();
+  assert.match(await readFile(manager.plistPath, 'utf8'), /\/tmp\/runtime cache\/bin\/node/);
+  assert.doesNotMatch(await readFile(manager.plistPath, 'utf8'), /current\/runtime\/node/);
+});

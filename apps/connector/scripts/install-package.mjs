@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const args = process.argv.slice(2);
 const flag = (name) => { const index = args.indexOf(name); return index >= 0 ? args[index + 1] : undefined; };
@@ -17,7 +18,10 @@ if (!version) throw new Error('RELEASE_VERSION_MISSING');
 const checksumText = await fs.readFile(join(source, 'checksums.sha256'), 'utf8');
 const lines = checksumText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).filter((line) => !line.startsWith('#'));
 if (!lines.length) throw new Error('RELEASE_CHECKSUMS_EMPTY');
-const required = new Set(['VERSION', 'bin/companion', 'runtime/node', 'dist/cli.js', 'skills/hardware-companion/SKILL.md']);
+let lightPackage = false;
+try { lightPackage = JSON.parse(await fs.readFile(join(source, 'compatibility.json'), 'utf8')).nodeRuntime === 'external-validated-absolute-path'; } catch {}
+const required = new Set(['VERSION', 'bin/companion', 'dist/cli.js', 'skills/hardware-companion/SKILL.md']);
+if (!lightPackage) required.add('runtime/node');
 for (const line of lines) {
   const match = /^(?<hash>[a-fA-F0-9]{64})\s+\*?(?<file>.+)$/.exec(line);
   if (!match?.groups) throw new Error('RELEASE_CHECKSUM_INVALID');
@@ -28,10 +32,18 @@ for (const line of lines) {
   required.delete(file);
 }
 if (required.size) throw new Error(`RELEASE_REQUIRED_FILE_MISSING:${[...required].join(',')}`);
+let nodePath;
+if (lightPackage) {
+  const candidate = flag('--node');
+  if (!candidate || !isAbsolute(candidate)) throw new Error('RUNTIME_NODE_ABSOLUTE_PATH_REQUIRED');
+  nodePath = (await fs.realpath(candidate));
+  const probe = `const major=Number(process.versions.node.split('.')[0]);if(process.platform!=='darwin'||process.arch!=='arm64'||![22,24].includes(major)||!process.versions.openssl)process.exit(78);Promise.all([import('node:crypto'),import('node:fs/promises'),import('node:net'),import('node:tls')]).catch(()=>process.exit(78));`;
+  try { execFileSync(nodePath, ['-e', probe], { stdio: 'ignore', timeout: 5000 }); } catch { throw new Error('RUNTIME_NODE_INCOMPATIBLE'); }
+}
 const current = join(installRoot, 'current'); const previous = join(installRoot, 'previous');
 try { await fs.access(current); throw new Error('INSTALL_ROOT_OCCUPIED'); } catch (error) { if (error?.message === 'INSTALL_ROOT_OCCUPIED') throw error; }
 try { await fs.access(previous); throw new Error('INSTALL_ROOT_OCCUPIED'); } catch (error) { if (error?.message === 'INSTALL_ROOT_OCCUPIED') throw error; }
 await fs.mkdir(installRoot, { recursive: true });
 const staging = join(installRoot, `.staging-install-${process.pid}-${Date.now()}`);
-try { await fs.cp(source, staging, { recursive: true, errorOnExist: true }); await fs.rename(staging, current); console.log(JSON.stringify({ ok: true, operation: 'install', installRoot, current, version, launchctl: 'not-called', configPreserved: true })); }
+try { await fs.cp(source, staging, { recursive: true, errorOnExist: true }); if (nodePath) await fs.writeFile(join(staging, 'runtime-node-path'), `${nodePath}\n`); await fs.rename(staging, current); console.log(JSON.stringify({ ok: true, operation: 'install', installRoot, current, version, launchctl: 'not-called', configPreserved: true })); }
 finally { await fs.rm(staging, { recursive: true, force: true }); }

@@ -24,11 +24,12 @@ const outRoot = resolve(process.env.HC_PACKAGE_OUT ?? join(connectorRoot, 'artif
 const packageName = `hardware-companion-macos-${arch}-v${version}`;
 const staging = join(outRoot, packageName);
 const tarball = join(outRoot, `${packageName}.tar.gz`);
+const skillTarball = join(outRoot, `hardware-companion-skill-v${version}.tar.gz`);
 await fs.rm(staging, { recursive: true, force: true });
 await fs.rm(tarball, { force: true });
+await fs.rm(skillTarball, { force: true });
 await fs.mkdir(join(staging, 'bin'), { recursive: true });
 await fs.mkdir(join(staging, 'dist'), { recursive: true });
-await fs.mkdir(join(staging, 'runtime'), { recursive: true });
 await fs.mkdir(join(staging, 'node_modules', '@companion', 'protocol'), { recursive: true });
 await fs.mkdir(join(staging, 'node_modules', 'ws'), { recursive: true });
 await fs.mkdir(join(staging, 'scripts'), { recursive: true });
@@ -43,11 +44,8 @@ await fs.cp(skillRoot, join(staging, 'skills', 'hardware-companion'), { recursiv
 await fs.cp(join(connectorRoot, 'scripts', 'install-launchagent.mjs'), join(staging, 'scripts', 'install-launchagent.mjs'));
 await fs.cp(join(connectorRoot, 'scripts', 'install-package.mjs'), join(staging, 'scripts', 'install-package.mjs'));
 
-const nodeTarget = join(staging, 'runtime', 'node');
-await fs.copyFile(process.execPath, nodeTarget);
-await fs.chmod(nodeTarget, 0o755);
 await fs.chmod(join(staging, 'dist', 'cli.js'), 0o755);
-const wrapper = '#!/bin/sh\nset -eu\nROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)\nexec "$ROOT/runtime/node" "$ROOT/dist/cli.js" "$@"\n';
+const wrapper = '#!/bin/sh\nset -eu\nROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)\nNODE=${HC_COMPANION_NODE:-}\nif [ -z "$NODE" ] && [ -f "$ROOT/runtime-node-path" ]; then NODE=$(cat "$ROOT/runtime-node-path"); fi\nif [ -z "$NODE" ] || [ ! -x "$NODE" ]; then echo "RUNTIME_REPAIR_REQUIRED: run the hardware-companion bootstrap again" >&2; exit 78; fi\nexec "$NODE" "$ROOT/dist/cli.js" "$@"\n';
 await fs.writeFile(join(staging, 'bin', 'companion'), wrapper, { mode: 0o755 });
 await fs.chmod(join(staging, 'bin', 'companion'), 0o755);
 await fs.writeFile(join(staging, 'package.json'), JSON.stringify({ name: 'hardware-companion-runtime', version, type: 'module', private: true, bin: { companion: 'bin/companion' } }, null, 2) + '\n');
@@ -56,7 +54,8 @@ await fs.writeFile(join(staging, 'compatibility.json'), JSON.stringify({
   packageVersion: version,
   protocol: 'hc/1',
   architecture: arch,
-  bundledNode: 'runtime/node',
+  nodeRuntime: 'external-validated-absolute-path',
+  supportedNodeMajors: [22, 24],
   codex: { testedVersion: '0.155.0-alpha.9.2', capabilities: ['initialize', 'account/read', 'thread/list', 'thread/read', 'queue'] },
   x64Built: false,
 }, null, 2) + '\n');
@@ -79,4 +78,7 @@ await fs.writeFile(join(staging, 'checksums.sha256'), checksumLines.join('\n') +
 execFileSync('tar', ['-czf', tarball, '-C', outRoot, packageName]);
 const hash = createHash('sha256').update(await fs.readFile(tarball)).digest('hex');
 await fs.writeFile(`${tarball}.sha256`, `${hash}  ${tarball.split('/').pop()}\n`);
-console.log(JSON.stringify({ ok: true, artifact: tarball, sha256: hash, arch, includes: ['bin/companion', 'runtime/node', 'dist', 'skills/hardware-companion', 'VERSION', 'compatibility.json', 'checksums.sha256'], x64Built: false }));
+execFileSync('tar', ['-czf', skillTarball, '-C', join(staging, 'skills'), 'hardware-companion']);
+const skillHash = createHash('sha256').update(await fs.readFile(skillTarball)).digest('hex');
+await fs.writeFile(`${skillTarball}.sha256`, `${skillHash}  ${skillTarball.split('/').pop()}\n`);
+console.log(JSON.stringify({ ok: true, artifact: tarball, sha256: hash, skillArtifact: skillTarball, skillSha256: skillHash, arch, includes: ['bin/companion', 'dist', 'skills/hardware-companion', 'VERSION', 'compatibility.json', 'checksums.sha256'], x64Built: false }));

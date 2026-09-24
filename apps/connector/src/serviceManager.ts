@@ -50,7 +50,7 @@ export class ServiceManager {
   constructor(options: ServiceManagerOptions = {}) {
     this.homeDir = options.homeDir ?? homedir();
     this.installRoot = options.installRoot;
-    this.nodePath = options.nodePath ?? (this.installRoot ? join(this.installRoot, 'current', 'runtime', 'node') : process.execPath);
+    this.nodePath = options.nodePath ?? process.execPath;
     this.cliPath = options.cliPath ?? (this.installRoot ? join(this.installRoot, 'current', 'dist', 'cli.js') : join(dirname(fileURLToPath(import.meta.url)), 'cli.js'));
     this.configPath = options.configPath ?? join(this.homeDir, 'Library', 'Application Support', 'HardwareCompanion', 'config.json');
     this.logDir = options.logDir ?? join(this.homeDir, 'Library', 'Logs', 'HardwareCompanion');
@@ -116,10 +116,10 @@ export class ServiceManager {
   }
 
   async start(): Promise<{ started: boolean; loaded: boolean; label: string }> {
-    await this.assertLayout();
     let current = await this.print();
     if (!current.loaded) {
       try { await fs.access(this.plistPath); } catch { throw new Error('SERVICE_NOT_INSTALLED'); }
+      await fs.writeFile(this.plistPath, this.plist(), { mode: 0o600 });
       const bootstrapped = await this.launchctl(['bootstrap', this.domain, this.plistPath]);
       if (bootstrapped.code !== 0) throw new Error(`LAUNCHCTL_BOOTSTRAP_FAILED:${bootstrapped.stderr.trim() || bootstrapped.code}`);
       current = await this.print();
@@ -133,7 +133,6 @@ export class ServiceManager {
   }
 
   async stop(): Promise<{ stopped: boolean; loaded: boolean; label: string }> {
-    await this.assertLayout();
     const current = await this.print();
     if (!current.loaded) return { stopped: false, loaded: false, label: this.label };
     const result = await this.launchctl(['bootout', this.target]);

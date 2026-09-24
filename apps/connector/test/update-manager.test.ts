@@ -22,6 +22,20 @@ function fakeService() {
   return { calls, stop: async () => { calls.push('stop'); }, start: async () => { calls.push('start'); } };
 }
 
+test('same verified release reuses the running service without rotation', async t => {
+  const base = await mkdtemp(join(tmpdir(), 'hc-update-reuse-'));
+  t.after(() => rm(base, { recursive: true, force: true }));
+  const root = join(base, 'install'), candidate = join(base, 'candidate');
+  await release(candidate, '0.3.10', 'same');
+  await release(join(root, 'current'), '0.3.10', 'same');
+  const service = fakeService();
+  const result = await new UpdateManager({ installRoot: root, service, healthCheck: async () => true }).update(candidate);
+  assert.equal(result.updated, false);
+  assert.equal(result.rolledBack, false);
+  assert.deepEqual(service.calls, []);
+  await assert.rejects(() => access(join(root, 'previous')));
+});
+
 test('update verifies release, rotates current to previous, and preserves config', async (t) => {
   const base = await mkdtemp(join(tmpdir(), 'hc-update-')); const root = join(base, 'install'); t.after(() => rm(base, { recursive: true, force: true }));
   const candidate = join(base, 'candidate'); await release(candidate, '0.2.1', 'new');
@@ -121,7 +135,7 @@ test('update reuses the install-root plist and health-checks the new version', a
   const service = new ServiceManager({ homeDir: home, installRoot: root, uid: 501, launchctl });
   await service.install();
   const plist = await readFile(service.plistPath, 'utf8');
-  assert.match(plist, new RegExp(`${root}/current/runtime/node`));
+  assert.match(plist, new RegExp(process.execPath));
   assert.match(plist, new RegExp(`${root}/current/dist/cli\\.js`));
   const observed: string[] = [];
   const result = await new UpdateManager({

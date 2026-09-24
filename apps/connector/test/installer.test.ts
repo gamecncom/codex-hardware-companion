@@ -61,7 +61,7 @@ test('installer rejects occupied current and preserves old files', async (t) => 
   assert.equal(await readFile(join(installRoot, 'current', 'VERSION'), 'utf8'), 'old\n');
 });
 
-test('real macOS package installs to current and bundled wrapper runs read-only CLI', async (t) => {
+test('real macOS light package installs with external Node and runs read-only CLI', async (t) => {
   const base = await mkdtemp(join(tmpdir(), 'hc real package ')); t.after(() => rm(base, { recursive: true, force: true }));
   const artifacts = join(base, 'artifacts with spaces'); const installRoot = join(base, 'installed connector');
   await mkdir(artifacts, { recursive: true });
@@ -72,11 +72,12 @@ test('real macOS package installs to current and bundled wrapper runs read-only 
   await run('tar', ['-xzf', join(artifacts, tarball!), '-C', base]);
   const packageDir = join(base, tarball!.slice(0, -7));
   const checksumText = await readFile(join(packageDir, 'checksums.sha256'), 'utf8');
-  for (const required of ['bin/companion', 'runtime/node', 'dist/cli.js', 'skills/hardware-companion/SKILL.md', 'VERSION']) assert.ok(checksumText.split(/\r?\n/).some((line) => line.endsWith(`  ${required}`)), `checksum missing ${required}`);
-  for (const required of ['bin/companion', 'runtime/node', 'dist/cli.js', 'skills/hardware-companion/SKILL.md', 'VERSION']) assert.match(checksumText, new RegExp(`\\s${required.replaceAll('/', '\/')}$`, 'm'));
+  for (const required of ['bin/companion', 'dist/cli.js', 'skills/hardware-companion/SKILL.md', 'VERSION']) assert.ok(checksumText.split(/\r?\n/).some((line) => line.endsWith(`  ${required}`)), `checksum missing ${required}`);
+  assert.doesNotMatch(checksumText, /runtime\/node/);
   await mkdir(installRoot, { recursive: true }); await writeFile(join(installRoot, 'config.json'), '{"token":"keep"}');
-  await run(join(packageDir, 'runtime/node'), [join(packageDir, 'scripts/install-package.mjs'), '--from', packageDir, '--install-root', installRoot]);
+  await run(process.execPath, [join(packageDir, 'scripts/install-package.mjs'), '--from', packageDir, '--install-root', installRoot, '--node', process.execPath]);
   const wrapper = join(installRoot, 'current', 'bin', 'companion'); await access(wrapper);
+  assert.equal((await readFile(join(installRoot, 'current', 'runtime-node-path'), 'utf8')).trim(), process.execPath);
   let doctorOutput: any;
   try { await run(wrapper, ['doctor', '--binary', '/bin/echo'], { env: { PATH: '/usr/bin:/bin' } }); assert.fail('invalid synthetic app-server should not pass'); }
   catch (error: any) { doctorOutput = JSON.parse(String(error.stdout)); }
