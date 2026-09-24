@@ -1,6 +1,6 @@
 # RELEASE MANIFEST v0.3.10
 
-状态（2026-09-24）：Apple silicon macOS arm64 轻量安装候选；公开 GitHub Release 与真实新 Mac 验收待完成。v0.3.8 固定资产不覆盖。
+状态（2026-09-24）：Apple silicon macOS arm64 轻量安装包已在 [公开 GitHub Release v0.3.10](https://github.com/gamecncom/codex-hardware-companion/releases/tag/v0.3.10) 发布；真实新 Mac 验收待完成。v0.3.8 固定资产未覆盖。
 
 | 文件 | 字节 | SHA-256 |
 |---|---:|---|
@@ -15,3 +15,5 @@
 已完成：隔离路径中的兼容/无 Node、同版复用、带空格路径、旧版升级、SHA 校验、GitHub 回退、后台服务路径及全量软件测试。云端静态下载入口已部署，原业务路由、当前设备绑定与 SaaS 健康状态保持。真实新 Mac 首装、真实设备端双向消息和解绑/重新绑定仍须单独现场验收；本机测试不替代。
 
 当前 Mac 已从 v0.3.8 升至 v0.3.10：LaunchAgent 运行，云端连接恢复；配置文件 SHA-256 前后相同，原设备绑定仍 active。同版重跑返回 `reused=true`、`downloaded=false`，LaunchAgent PID 未变。自有 HTTPS 从本机完整下载 Node 归档的一次实测为 27,386,080 字节、103.87 秒、平均 263,654 字节/秒，SHA-256 与官方值一致；这只是当次网络测量，不保证其他网络速度。
+
+公开 Release 列出六个上传成功的文件；从 GitHub Release 回退地址实际下载的业务包 SHA-256 与本清单一致，Node 包的公开回退地址返回 200 且长度与本清单一致。真实新 Mac 的验收状态单列于 [NEW-MAC-ACCEPTANCE-v0.3.10.md](NEW-MAC-ACCEPTANCE-v0.3.10.md)。

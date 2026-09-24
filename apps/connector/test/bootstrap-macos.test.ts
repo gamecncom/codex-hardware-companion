@@ -98,4 +98,10 @@ test('no compatible Node installs the fixed private arm64 runtime into an isolat
   const probe=await run(join(cache,'bin','node'),['-p','process.arch']);
   assert.equal(probe.stdout.trim(),'arm64');
   assert.equal((await readFile(join(installRoot,'current','runtime-node-path'),'utf8')).trim(),await realpath(join(cache,'bin','node')));
+  const incompatibleNode=join(root,'incompatible-node');
+  await writeFile(incompatibleNode,'#!/bin/sh\nexit 78\n'); await chmod(incompatibleNode,0o755);
+  const secondInstall=join(root,'incompatible node install'),secondRuntime=join(root,'second runtime cache');
+  const second=await run('/bin/sh',[script],{env:{...process.env,HC_INSTALL_ROOT:secondInstall,HC_RUNTIME_ROOT:secondRuntime,HC_BOOTSTRAP_NODE:incompatibleNode,HC_TEST_NODE_ARCHIVE:officialRuntimeArchive,HC_TEST_NODE_CHECKSUM:runtimeSidecar,HC_TEST_ARCHIVE:archive,HC_TEST_CHECKSUM:businessSidecar,PATH:`${bin}:${process.env.PATH}`}});
+  assert.match(second.stdout,/"operation":"bootstrap"/);
+  assert.ok((await readFile(join(secondRuntime,'node-v24.21.0-darwin-arm64','LICENSE'),'utf8')).length>100);
 });

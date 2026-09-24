@@ -11,5 +11,6 @@
 7. 绑定后关闭安装终端，重新检查 LaunchAgent、Connector 心跳和任务快照；不要提前解绑或刷机。
 
 完整可照读话术、现场步骤和验收表见 [DEMO-OPERATIONS.md](DEMO-OPERATIONS.md)。
+真实新机的结果独立记录在 [NEW-MAC-ACCEPTANCE-v0.3.10.md](NEW-MAC-ACCEPTANCE-v0.3.10.md)；当前开发机升级不能代替。
 
 解绑必须先执行 `device unbind prepare`，向用户展示设备和影响，再由用户明确确认后执行 `device unbind confirm`。设备切换阶段再处理解绑和刷机；准备阶段不解除当前绑定。
